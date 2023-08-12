@@ -12,12 +12,12 @@ import os
 def train_epoch(model, train_loader, optimizer, loss_fn, device, atom_encoder, bond_encoder, threshold):
     model.train()
     # Initializing Metrics
-    losses = torch.tensor([], requires_grad=False)
-    accuracy = BinaryAccuracy(threshold=threshold)
-    precision = BinaryPrecision(threshold=threshold)
-    recall = BinaryRecall(threshold=threshold)
-    f1 = BinaryF1Score(threshold=threshold)
-    auc_roc = BinaryAUROC()
+    losses = torch.tensor([], requires_grad=False, device=device)
+    accuracy = BinaryAccuracy(threshold=threshold).to(device)
+    precision = BinaryPrecision(threshold=threshold).to(device)
+    recall = BinaryRecall(threshold=threshold).to(device)
+    f1 = BinaryF1Score(threshold=threshold).to(device)
+    auc_roc = BinaryAUROC().to(device)
 
     # Batch iteration
     for data in train_loader:
@@ -42,24 +42,24 @@ def train_epoch(model, train_loader, optimizer, loss_fn, device, atom_encoder, b
         auc_roc.update(input=out.squeeze(), target=true)
 
     # Computing Metrics
-    losses = torch.mean(losses, dim=0)
-    accuracy = accuracy.compute()
-    precision = precision.compute()
-    recall = recall.compute()
-    f1 = f1.compute()
-    auc_roc = auc_roc.compute()
+    losses = torch.mean(losses, dim=0).detach().cpu()
+    accuracy = accuracy.compute().detach().cpu()
+    precision = precision.compute().detach().cpu()
+    recall = recall.compute().detach().cpu()
+    f1 = f1.compute().detach().cpu()
+    auc_roc = auc_roc.compute().detach().cpu()
     return losses, accuracy, precision, recall, f1, auc_roc
 
 
 def evaluate_epoch(model, val_loader, loss_fn, device, atom_encoder, bond_encoder, threshold):
     model.eval()
     # Initializing Metrics
-    losses = torch.tensor([], requires_grad=False)
-    accuracy = BinaryAccuracy(threshold=threshold)
-    precision = BinaryPrecision(threshold=threshold)
-    recall = BinaryRecall(threshold=threshold)
-    f1 = BinaryF1Score(threshold=threshold)
-    auc_roc = BinaryAUROC()
+    losses = torch.tensor([], requires_grad=False, device=device)
+    accuracy = BinaryAccuracy(threshold=threshold).to(device)
+    precision = BinaryPrecision(threshold=threshold).to(device)
+    recall = BinaryRecall(threshold=threshold).to(device)
+    f1 = BinaryF1Score(threshold=threshold).to(device)
+    auc_roc = BinaryAUROC().to(device)
 
     # Batch iteration
     with torch.no_grad():
@@ -82,12 +82,12 @@ def evaluate_epoch(model, val_loader, loss_fn, device, atom_encoder, bond_encode
             auc_roc.update(input=out.squeeze(), target=true)
 
     # Computing Metrics
-    losses = torch.mean(losses, dim=0)
-    accuracy = accuracy.compute()
-    precision = precision.compute()
-    recall = recall.compute()
-    f1 = f1.compute()
-    auc_roc = auc_roc.compute()
+    losses = torch.mean(losses, dim=0).detach().cpu()
+    accuracy = accuracy.compute().detach().cpu()
+    precision = precision.compute().detach().cpu()
+    recall = recall.compute().detach().cpu()
+    f1 = f1.compute().detach().cpu()
+    auc_roc = auc_roc.compute().detach().cpu()
     return losses, accuracy, precision, recall, f1, auc_roc
 
 
@@ -103,10 +103,6 @@ def train(model, num_epochs, results_folder_path):
     val_loader = DataLoader(dataset[split_idx["valid"]], batch_size=64, shuffle=True)
     print(f'Validation dataset loaded.Size: {len(dataset[split_idx["valid"]])} graphs')
 
-    # Initializing atom and bond encoders
-    atom_encoder = AtomEncoder(emb_dim=32)
-    bond_encoder = BondEncoder(emb_dim=32)
-
     # Setting up device to be used
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -116,6 +112,10 @@ def train(model, num_epochs, results_folder_path):
         print("CUDA is not available. Using CPU.")
 
     model.to(device)
+
+    # Initializing atom and bond encoders
+    atom_encoder = AtomEncoder(emb_dim=64).to(device)
+    bond_encoder = BondEncoder(emb_dim=32).to(device)
 
     # Creating files to write metrics
     if not os.path.exists(results_folder_path):
@@ -138,9 +138,9 @@ def train(model, num_epochs, results_folder_path):
         # Train
         training_loss, training_accuracy, training_precision, training_recall, training_f1, training_auc_roc = \
             train_epoch(model, train_loader, optimizer, criterion, device, atom_encoder, bond_encoder, clf_threshold)
-        print(f'Epoch {epoch} Training: average loss = {training_loss}, accuracy = {training_accuracy}, AUC ROC = {training_auc_roc}')
+        print(f'\nEpoch {epoch} Training: average loss = {training_loss}, accuracy = {training_accuracy}, F1 = {training_f1}, AUC ROC = {training_auc_roc}')
         with open(training_file_path, 'a') as file:
-            file.write(f'{epoch},{training_loss},{training_accuracy},{training_precision},{training_recall},{training_f1},{training_auc_roc}')
+            file.write(f'{epoch},{training_loss},{training_accuracy},{training_precision},{training_recall},{training_f1},{training_auc_roc}\n')
         if training_auc_roc > max_auc_roc_training:
             should_save_model = True
             max_auc_roc_training = training_auc_roc
@@ -148,9 +148,9 @@ def train(model, num_epochs, results_folder_path):
         # Validate
         validation_loss, validation_accuracy, validation_precision, validation_recall, validation_f1, validation_auc_roc = \
             evaluate_epoch(model, val_loader, criterion, device, atom_encoder, bond_encoder, clf_threshold)
-        print(f'Epoch {epoch} Validation: average loss = {validation_loss}, accuracy = {validation_accuracy}, AUC ROC = {validation_auc_roc}')
+        print(f'\nEpoch {epoch} Validation: average loss = {validation_loss}, accuracy = {validation_accuracy}, F1 = {validation_f1}, AUC ROC = {validation_auc_roc}')
         with open(validation_file_path, 'a') as file:
-            file.write(f'{epoch},{validation_loss},{validation_accuracy},{validation_precision},{validation_recall},{validation_f1},{validation_auc_roc}')
+            file.write(f'{epoch},{validation_loss},{validation_accuracy},{validation_precision},{validation_recall},{validation_f1},{validation_auc_roc}\n')
         if validation_auc_roc > max_auc_roc_validation:
             should_save_model = True
             max_auc_roc_validation = validation_auc_roc
@@ -158,6 +158,7 @@ def train(model, num_epochs, results_folder_path):
         # Save model
         if should_save_model or epoch % 10 == 0:
             torch.save(model.state_dict(), os.path.join(results_folder_path, f'models/model_{epoch}.pt'))
+            should_save_model = False
 
     # Save final model
     torch.save(model.state_dict(), os.path.join(results_folder_path, f'models/model_{num_epochs}.pt'))
@@ -165,4 +166,4 @@ def train(model, num_epochs, results_folder_path):
 
 if __name__ == '__main__':
     model = GATModel()
-    train(model=model, num_epochs=1000, results_folder_path='./experimental')
+    train(model=model, num_epochs=1000, results_folder_path='experiment2')
