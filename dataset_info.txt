@@ -1,0 +1,30 @@
+Total 41127 graphs in dataset.
+Number of node features: 9.
+Number of edge features: 3.
+
+Positive classes: 1443
+Positive classes percentage: 3.508643956524911
+Negative classes: 39684
+Negative classes percentage: 96.49135604347508
+
+Training subset size: 32901 graphs.
+Positive classes in training subset: 1232
+Positive classes percentage in training subset: 3.7445670344366433
+Negative classes in training subset: 31669
+Negative classes percentage in training subset: 96.25543296556336
+
+Validation subset size: 4113 graphs.
+Positive classes in validation subset: 81
+Positive classes percentage in validation subset: 1.9693654266958425
+Negative classes in validation subset: 4032
+Negative classes percentage in validation subset: 98.03063457330416
+
+Testing subset size: 4113 graphs.
+Positive classes in testing subset: 130
+Positive classes percentage in testing subset: 3.1607099440797475
+Negative classes in testing subset: 3983
+Negative classes percentage in testing subset: 96.83929005592026
+
+Average number of nodes per graph: 25.510321686483334
+Average number of edges per graph: 54.93656235563012
+Average node degree: 2.153503316453211
