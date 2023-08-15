@@ -1,0 +1,7 @@
+GATModel
+
+(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=4, dropout=0.5)
+batch size = 64
+lr = 0.0001
+
+TESTING: Best model = model_3.pt, AUC ROC = 0.6518607929855733

@@ -89,4 +89,4 @@ def generate_plots(metrics_folder_path):
 
 
 if __name__ == '__main__':
-    generate_plots('./experiment1')
+    generate_plots('./experiments/GATModel5/experiment0')

@@ -2,21 +2,58 @@ from ogb.graphproppred import PygGraphPropPredDataset
 from torch_geometric.loader import DataLoader
 from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 import torch
-from models import GATModel
+from models import GATModel, GATModelExtended, NNModel2
+from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
+
 from tqdm import tqdm
 import os
-from training import evaluate_epoch
+
+
+def evaluate_epoch(model, val_loader, loss_fn, device, atom_encoder, bond_encoder, threshold):
+    model.eval()
+    # Initializing Metrics
+    losses = torch.tensor([], requires_grad=False, device=device)
+    accuracy = BinaryAccuracy(threshold=threshold).to(device)
+    precision = BinaryPrecision(threshold=threshold).to(device)
+    recall = BinaryRecall(threshold=threshold).to(device)
+    f1 = BinaryF1Score(threshold=threshold).to(device)
+    auc_roc = BinaryAUROC().to(device)
+
+    # Batch iteration
+    with torch.no_grad():
+        for data in val_loader:
+            if data.y.shape == torch.Size([]):
+                print("Empty batch detected.")
+            # Forward pass
+            data = data.to(device)
+            out = model(atom_encoder(data.x), data.edge_index, bond_encoder(data.edge_attr), data.batch)
+            loss = loss_fn(out, data.y.float())
+
+            # Updating Metrics
+            pred = (out > threshold).float().squeeze()
+            true = data.y.squeeze()
+            losses = torch.cat((losses, loss.reshape(1)), dim=0)
+            accuracy.update(input=pred, target=true)
+            precision.update(input=pred, target=true)
+            recall.update(input=pred, target=true)
+            f1.update(input=pred, target=true)
+            auc_roc.update(input=out.squeeze(), target=true)
+
+    # Computing Metrics
+    losses = torch.mean(losses, dim=0).detach().cpu()
+    accuracy = accuracy.compute().detach().cpu()
+    precision = precision.compute().detach().cpu()
+    recall = recall.compute().detach().cpu()
+    f1 = f1.compute().detach().cpu()
+    auc_roc = auc_roc.compute().detach().cpu()
+    return losses, accuracy, precision, recall, f1, auc_roc
 
 
 def test_models(model, results_folder_path):
     # Loading dataset
     dataset = PygGraphPropPredDataset(name='ogbg-molhiv', root='dataset/')
-    print(f'Total {len(dataset)} graphs in dataset.')
-
-    # Creating training and validation data loaders
     split_idx = dataset.get_idx_split()
-    test_loader = DataLoader(dataset[split_idx['test']], batch_size=64, shuffle=True)
-    print(f'Testing dataset loaded. Size: {len(dataset[split_idx["test"]])} graphs.')
+    test_loader = DataLoader(dataset[split_idx['test']], batch_size=128, shuffle=True)
 
     # Setting up device to be used
     if torch.cuda.is_available():
@@ -37,6 +74,9 @@ def test_models(model, results_folder_path):
         print('Specified folder does not exist.')
         return
     testing_folder_path = os.path.join(results_folder_path, 'tests')
+    if os.path.exists(testing_folder_path):
+        print('Tests folder already exists.')
+        return
     os.mkdir(testing_folder_path)
     models_path = os.path.join(results_folder_path, 'models')
     all_models = os.listdir(models_path)
@@ -66,9 +106,9 @@ def test_models(model, results_folder_path):
             best_model = model_name
             max_auc_roc = testing_auc_roc
 
-    print(f'Best model: {best_model}: AUC ROC = {max_auc_roc}')
+    print(f'TESTING: Best model = {best_model}, AUC ROC = {max_auc_roc}')
 
 
 if __name__ == '__main__':
-    model = GATModel(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=2, dropout=0.5)
-    test_models(model, './experiment0')
+    model = NNModel2(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+    test_models(model, './experiments/NNModel2/experiment1cont')

@@ -1,0 +1,8 @@
+NNModel3
+
+(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5)
+learning_rate=0.0001, batch_size=128
+
+TRAINING: Max AUC ROC = 0.9769113902611961
+VALIDATION: Max AUC ROC = 0.799982853223594
+TESTING: Best model = model_40.pt, AUC ROC = 0.5447169702002742

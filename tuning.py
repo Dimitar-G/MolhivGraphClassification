@@ -1,4 +1,4 @@
-import optuna
+# import optuna
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -7,7 +7,8 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.nn import GATv2Conv, global_mean_pool
 from torch.nn import Linear
 from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
-from models import GATModelTune
+from models import GATModel
+from transformers.models import
 
 def train_epoch(model, train_loader, optimizer, loss_fn, device):
     model.train()

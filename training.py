@@ -4,7 +4,7 @@ from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 import torch
 from torch.optim import Adam
 from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models import GATModel, GATModelPlus, GATModelExtended, GATModel5
+from models import GATModel, GATModelPlus, GATModelExtended, GATModel5, NNModel2, NNModel3, GATModelSAG, GATModel5SAG, NNModel2SAG
 from tqdm import tqdm
 import os
 from plots import generate_plots
@@ -102,13 +102,13 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
         with open(training_file_path, 'a') as file:
             file.write(f'{epoch},{training_loss},{training_accuracy},{training_precision},{training_recall},{training_f1},{training_auc_roc}\n')
         if training_auc_roc > max_auc_roc_training:
-            should_save_model = True
+            # should_save_model = True
             max_auc_roc_training = training_auc_roc
 
         # Validate
         validation_loss, validation_accuracy, validation_precision, validation_recall, validation_f1, validation_auc_roc = \
             evaluate_epoch(model, val_loader, criterion, device, atom_encoder, bond_encoder, clf_threshold)
-        print(f'\nEpoch {epoch} Validation: average loss = {validation_loss}, F1 = {validation_f1}, AUC ROC = {validation_auc_roc}')
+        print(f'Epoch {epoch} Validation: average loss = {validation_loss}, F1 = {validation_f1}, AUC ROC = {validation_auc_roc}')
         with open(validation_file_path, 'a') as file:
             file.write(f'{epoch},{validation_loss},{validation_accuracy},{validation_precision},{validation_recall},{validation_f1},{validation_auc_roc}\n')
         if validation_auc_roc > max_auc_roc_validation:
@@ -122,12 +122,42 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
 
     # Save final model
     torch.save(model.state_dict(), os.path.join(results_folder_path, f'models/model_{num_epochs}.pt'))
+    print(f'TRAINING: Max AUC ROC = {max_auc_roc_training}')
     print(f'VALIDATION: Max AUC ROC = {max_auc_roc_validation}')
 
 
 if __name__ == '__main__':
-    model = GATModel5(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=6, dropout=0.5)
-    training_folder = './experiments/GATModel5/experiment0'
+    # model = NNModel2(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+    # # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
+    # training_folder = './experiments/NNModel2/experiment1cont'
+    # train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    # generate_plots(training_folder)
+    # test_models(model, training_folder)
+
+    model = GATModelSAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=4, dropout=0.5)
+    # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
+    training_folder = './experiments/GATModelSAG/experiment0'
     train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    generate_plots(training_folder)
+    test_models(model, training_folder)
+
+    model = GATModelSAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=8, dropout=0.5)
+    # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
+    training_folder = './experiments/GATModelSAG/experiment1'
+    train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    generate_plots(training_folder)
+    test_models(model, training_folder)
+
+    model = GATModel5SAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=6, dropout=0.5)
+    # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
+    training_folder = './experiments/GATModel5SAG/experiment0'
+    train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    generate_plots(training_folder)
+    test_models(model, training_folder)
+
+    model = NNModel2SAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+    # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
+    training_folder = './experiments/NNModel2SAG/experiment0'
+    train(model=model, num_epochs=150, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
     generate_plots(training_folder)
     test_models(model, training_folder)
