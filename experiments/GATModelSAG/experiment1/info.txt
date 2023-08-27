@@ -1,0 +1,8 @@
+GATModelSAG
+
+(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=8, dropout=0.5)
+learning_rate=0.0001, batch_size=128
+
+TRAINING: Max AUC ROC = 0.9441431494316413
+VALIDATION: Max AUC ROC = 0.7702500367430923
+TESTING: Best model = model_10.pt, AUC ROC = 0.6242202437281523

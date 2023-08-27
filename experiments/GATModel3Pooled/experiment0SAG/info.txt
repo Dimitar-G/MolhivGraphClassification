@@ -1,0 +1,5 @@
+GATModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=4, dropout=0.5, pooling_type='sag')
+
+TRAINING: Max AUC ROC = 0.9750443456729573
+VALIDATION: Max AUC ROC = 0.7885603444052518
+TESTING: Best model = model_10.pt, AUC ROC = 0.6767463643562062

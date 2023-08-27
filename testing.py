@@ -4,6 +4,7 @@ from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 import torch
 from models import GATModel, GATModelExtended, NNModel2
 from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
+from ogb.graphproppred import Evaluator
 
 from tqdm import tqdm
 import os
@@ -53,7 +54,7 @@ def test_models(model, results_folder_path):
     # Loading dataset
     dataset = PygGraphPropPredDataset(name='ogbg-molhiv', root='dataset/')
     split_idx = dataset.get_idx_split()
-    test_loader = DataLoader(dataset[split_idx['test']], batch_size=128, shuffle=True)
+    test_loader = DataLoader(dataset[split_idx['test']], batch_size=256, shuffle=False)
 
     # Setting up device to be used
     if torch.cuda.is_available():
@@ -73,14 +74,9 @@ def test_models(model, results_folder_path):
     if not os.path.exists(results_folder_path):
         print('Specified folder does not exist.')
         return
-    testing_folder_path = os.path.join(results_folder_path, 'tests')
-    if os.path.exists(testing_folder_path):
-        print('Tests folder already exists.')
-        return
-    os.mkdir(testing_folder_path)
     models_path = os.path.join(results_folder_path, 'models')
     all_models = os.listdir(models_path)
-
+    all_models = sorted(all_models, key=lambda s: int(s[6:-3]))
     # Initializing criterion and threshold
     criterion = torch.nn.BCELoss()
     clf_threshold = 0.5
@@ -88,12 +84,13 @@ def test_models(model, results_folder_path):
     max_auc_roc = 0.0
     best_model = None
 
+    results_file_path = os.path.join(results_folder_path, 'testing.csv')
+    open(results_file_path, 'w').close()
+
     # Models iteration
     for model_name in tqdm(all_models):
 
         model_path = os.path.join(models_path, model_name)
-        results_file_path = os.path.join(testing_folder_path, model_name[:-2] + 'txt')
-        open(results_file_path, 'w').close()
         model.load_state_dict(torch.load(model_path))
 
         # Evaluate
@@ -102,13 +99,19 @@ def test_models(model, results_folder_path):
         print(f'\nTesting model {model_name}: average loss = {testing_loss}, F1 = {testing_f1}, AUC ROC = {testing_auc_roc}')
         with open(results_file_path, 'a') as file:
             file.write(f'{model_name},{testing_loss},{testing_accuracy},{testing_precision},{testing_recall},{testing_f1},{testing_auc_roc}\n')
+            file.flush()
         if testing_auc_roc > max_auc_roc:
             best_model = model_name
             max_auc_roc = testing_auc_roc
 
     print(f'TESTING: Best model = {best_model}, AUC ROC = {max_auc_roc}')
+    info_file_path = os.path.join(results_folder_path, 'info.txt')
+    if os.path.exists(info_file_path):
+        with open(info_file_path, 'a') as file:
+            file.write(f'\nTESTING: Best model = {best_model}, AUC ROC = {max_auc_roc}')
+            file.flush()
 
 
 if __name__ == '__main__':
     model = NNModel2(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
-    test_models(model, './experiments/NNModel2/experiment1cont')
+    test_models(model, './experiments/NNModel2/test_dir')

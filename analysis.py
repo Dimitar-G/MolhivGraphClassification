@@ -1,14 +1,4 @@
 from ogb.graphproppred import PygGraphPropPredDataset
-from torch_geometric.loader import DataLoader
-from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
-import torch
-from torch.optim import Adam
-from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models import GATModel, GATModelExtended
-from tqdm import tqdm
-import os
-from plots import generate_plots
-from testing import test_models, evaluate_epoch
 
 
 if __name__ == '__main__':

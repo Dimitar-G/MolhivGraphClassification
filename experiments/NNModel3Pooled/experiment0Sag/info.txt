@@ -1,0 +1,9 @@
+NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='sag')
+
+learning_rate=0.0001
+batch_size=128
+weighted_sampling=False
+
+TRAINING: Max AUC ROC = 0.9560680269082018
+VALIDATION: Max AUC ROC = 0.7812699025083284
+TESTING: Best model = model_65.pt, AUC ROC = 0.6784642422603758

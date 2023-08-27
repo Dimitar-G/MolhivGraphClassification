@@ -1,0 +1,5 @@
+GINEModel3(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+
+TRAINING: Max AUC ROC = 0.9693722029572941
+VALIDATION: Max AUC ROC = 0.8090400254752107
+TESTING: Best model = model_1.pt, AUC ROC = 0.6134919561984589

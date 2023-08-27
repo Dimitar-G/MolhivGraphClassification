@@ -1,14 +1,16 @@
 from ogb.graphproppred import PygGraphPropPredDataset
 from torch_geometric.loader import DataLoader
+from torch.utils.data import WeightedRandomSampler
 from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 import torch
 from torch.optim import Adam
 from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models import GATModel, GATModelPlus, GATModelExtended, GATModel5, NNModel2, NNModel3, GATModelSAG, GATModel5SAG, NNModel2SAG
+from models import GATModel, GATModelPlus, GATModel3Pooled, GATModelExtended, GATModel5, NNModel2, NNModel3, GATModelSAG, GATModel5SAG, NNModel2SAG, GINEModel3, GINEModel3Pooled, GINEModel5, NNModel3Pooled
 from tqdm import tqdm
 import os
 from plots import generate_plots
 from testing import test_models, evaluate_epoch
+import numpy as np
 
 
 def train_epoch(model, train_loader, optimizer, loss_fn, device, atom_encoder, bond_encoder, threshold):
@@ -53,14 +55,23 @@ def train_epoch(model, train_loader, optimizer, loss_fn, device, atom_encoder, b
     return losses, accuracy, precision, recall, f1, auc_roc
 
 
-def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_size=64):
+def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_size=64, weighted_sampling=False):
     # Loading dataset
     dataset = PygGraphPropPredDataset(name='ogbg-molhiv', root='dataset/')
 
     # Creating training and validation data loaders
     split_idx = dataset.get_idx_split()
-    train_loader = DataLoader(dataset[split_idx['train']], batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(dataset[split_idx["valid"]], batch_size=batch_size, shuffle=True)
+    if weighted_sampling:
+        training_data = dataset[split_idx['train']]
+        labels = [int(g.y[0]) for g in training_data]
+        labels_unique, counts = np.unique(labels, return_counts=True)
+        class_weights = [1 / c for c in counts]
+        label_weights = [class_weights[e] for e in labels]
+        sampler = WeightedRandomSampler(label_weights, len(labels))
+        train_loader = DataLoader(training_data, batch_size=batch_size, sampler=sampler, num_workers=2)
+    else:
+        train_loader = DataLoader(dataset[split_idx['train']], batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(dataset[split_idx["valid"]], batch_size=batch_size, shuffle=False, num_workers=2)
 
     # Setting up device to be used
     if torch.cuda.is_available():
@@ -83,7 +94,8 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
     open(training_file_path, 'w').close()
     validation_file_path = os.path.join(results_folder_path, 'validation.csv')
     open(validation_file_path, 'w').close()
-    open(os.path.join(results_folder_path, 'info.txt'), 'w').close()
+    info_file_path = os.path.join(results_folder_path, 'info.txt')
+    open(info_file_path, 'w').close()
     os.mkdir(os.path.join(results_folder_path, 'models'))
 
     # Initializing optimizer and criterion
@@ -116,7 +128,7 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
             max_auc_roc_validation = validation_auc_roc
 
         # Save model
-        if should_save_model or epoch % 10 == 0:
+        if should_save_model or epoch % 5 == 0:
             torch.save(model.state_dict(), os.path.join(results_folder_path, f'models/model_{epoch}.pt'))
             should_save_model = False
 
@@ -124,40 +136,43 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
     torch.save(model.state_dict(), os.path.join(results_folder_path, f'models/model_{num_epochs}.pt'))
     print(f'TRAINING: Max AUC ROC = {max_auc_roc_training}')
     print(f'VALIDATION: Max AUC ROC = {max_auc_roc_validation}')
+    with open(info_file_path, 'a') as file:
+        file.write(f'\nTRAINING: Max AUC ROC = {max_auc_roc_training}')
+        file.write(f'\nVALIDATION: Max AUC ROC = {max_auc_roc_validation}')
+        file.flush()
 
 
 if __name__ == '__main__':
-    # model = NNModel2(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
-    # # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    # training_folder = './experiments/NNModel2/experiment1cont'
-    # train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
-    # generate_plots(training_folder)
-    # test_models(model, training_folder)
 
-    model = GATModelSAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=4, dropout=0.5)
+    print('Testing NNModel3Pooled SAG:')
+    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='sag')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/GATModelSAG/experiment0'
-    train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    training_folder = './experiments/NNModel3Pooled/experiment0Sag'
+    train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=False)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    model = GATModelSAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=8, dropout=0.5)
+    print('\nTraining model NNModel3Pooled TopK:')
+    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='topk')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/GATModelSAG/experiment1'
-    train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    training_folder = './experiments/NNModel3Pooled/experiment0Topk'
+    train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=False)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    model = GATModel5SAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=6, dropout=0.5)
+    print('Testing NNModel3Pooled SAG with weighted sampling:')
+    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='sag')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/GATModel5SAG/experiment0'
-    train(model=model, num_epochs=200, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    training_folder = './experiments/NNModel3Pooled/experiment1Sag'
+    train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    model = NNModel2SAG(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+    print('\nTraining model NNModel3Pooled TopK with weighted sampling:')
+    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='topk')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/NNModel2SAG/experiment0'
-    train(model=model, num_epochs=150, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128)
+    training_folder = './experiments/NNModel3Pooled/experiment1Topk'
+    train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
     generate_plots(training_folder)
     test_models(model, training_folder)
+

@@ -1,0 +1,5 @@
+GINEModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='topk')
+
+TRAINING: Max AUC ROC = 0.8168545492683451
+VALIDATION: Max AUC ROC = 0.7393659367038997
+TESTING: Best model = model_145.pt, AUC ROC = 0.6415486973483459

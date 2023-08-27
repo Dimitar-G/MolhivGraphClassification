@@ -1,0 +1,10 @@
+NNModel2SAG
+
+(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5)
+learning_rate=0.0001, batch_size=128
+
+TRAINING: Max AUC ROC = 0.9166793707886732
+VALIDATION: Max AUC ROC = 0.795613487164413
+TESTING: Best model = model_8.pt, AUC ROC = 0.6380289306475598
+TESTING: Best model = model_2.pt, AUC ROC = 0.6151277544950655
+TESTING: Best model = model_0.pt, AUC ROC = 0.6846047625485235
