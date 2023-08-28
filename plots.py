@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from ogb.graphproppred import PygGraphPropPredDataset
 from torch_geometric.utils import to_networkx
+from rdkit import Chem
 
 
 def plot_molecule(index=0):
@@ -13,9 +14,10 @@ def plot_molecule(index=0):
     molecule = dataset[index]
     g = to_networkx(molecule, to_undirected=True, )
 
-    atom_numbers = [int(atom_num[0]) for atom_num in molecule.x]
+    periodic_table = Chem.GetPeriodicTable()
+    atom_names = [periodic_table.GetElementSymbol(int(atom_num[0]) + 1) for atom_num in molecule.x]
     atom_labels = [node for node in g.nodes]
-    label_dict = {a_lab: a_num for (a_lab, a_num) in zip(atom_labels, atom_numbers)}
+    label_dict = {a_lab: a_num for (a_lab, a_num) in zip(atom_labels, atom_names)}
 
     plt.figure(figsize=(12, 12))
     plt.axis('off')
@@ -109,7 +111,6 @@ def generate_plots(metrics_folder_path):
 
 if __name__ == '__main__':
     # generate_plots('./experiments/GATModel5/experiment0')
-    # plot_molecule(0)
     plot_molecule(0)
     plot_molecule(1)
     plot_molecule(2)
