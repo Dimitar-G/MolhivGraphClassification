@@ -19,7 +19,7 @@ def plot_molecule(index=0):
 
     plt.figure(figsize=(12, 12))
     plt.axis('off')
-    nx.draw_networkx(g, pos=nx.spring_layout(g, seed=0), with_labels=True, labels=label_dict, node_size=800, font_size=14)
+    nx.draw_networkx(g, pos=nx.spring_layout(g, seed=0), with_labels=True, labels=label_dict, node_size=800, font_size=14, font_color='white')
     plt.show()
 
 
@@ -109,6 +109,8 @@ def generate_plots(metrics_folder_path):
 
 if __name__ == '__main__':
     # generate_plots('./experiments/GATModel5/experiment0')
+    # plot_molecule(0)
     plot_molecule(0)
     plot_molecule(1)
     plot_molecule(2)
+    plot_molecule(3)
