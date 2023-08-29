@@ -5,7 +5,7 @@ from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
 import torch
 from torch.optim import Adam
 from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models import GATModel, GATModelPlus, GATModel3Pooled, GATModelExtended, GATModel5, NNModel2, NNModel3, GATModelSAG, GATModel5SAG, NNModel2SAG, GINEModel3, GINEModel3Pooled, GINEModel5, NNModel3Pooled
+from models import GATModel, GATModelPlus, GATModel3Pooled, GATModelExtended, GATModel5, NNModel2, NNModel3, GATModelSAG, GATModel5SAG, NNModel2SAG, GINEModel3, GINEModel3Pooled, GINEModel5, GINEModel5Pooled, NNModel3Pooled
 from tqdm import tqdm
 import os
 from plots import generate_plots
@@ -144,34 +144,34 @@ def train(model, num_epochs, results_folder_path, learning_rate=0.0001, batch_si
 
 if __name__ == '__main__':
 
-    print('Testing NNModel3Pooled SAG:')
-    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='sag')
+    print('Training GINEModel5Pooled SAG:')
+    model = GINEModel5Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='sag')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/NNModel3Pooled/experiment0Sag'
+    training_folder = './experiments/GINEModel5Pooled/experiment0Sag'
     train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=False)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    print('\nTraining model NNModel3Pooled TopK:')
-    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='topk')
+    print('\nTraining model GINEModel5Pooled TopK:')
+    model = GINEModel5Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='topk')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/NNModel3Pooled/experiment0Topk'
+    training_folder = './experiments/GINEModel5Pooled/experiment0Topk'
     train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=False)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    print('Testing NNModel3Pooled SAG with weighted sampling:')
-    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='sag')
+    print('Training GINEModel5Pooled SAG with weighted sampling:')
+    model = GINEModel5Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='sag')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/NNModel3Pooled/experiment1Sag'
+    training_folder = './experiments/GINEModel5Pooled/experiment1Sag'
     train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
     generate_plots(training_folder)
     test_models(model, training_folder)
 
-    print('\nTraining model NNModel3Pooled TopK with weighted sampling:')
-    model = NNModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=128, dropout=0.5, pooling_type='topk')
+    print('\nTraining model GINEModel5Pooled TopK with weighted sampling:')
+    model = GINEModel5Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='topk')
     # model.load_state_dict(torch.load('./experiments/NNModel2/experiment0/models/model_100.pt'))
-    training_folder = './experiments/NNModel3Pooled/experiment1Topk'
+    training_folder = './experiments/GINEModel5Pooled/experiment1Topk'
     train(model=model, num_epochs=250, results_folder_path=training_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
     generate_plots(training_folder)
     test_models(model, training_folder)

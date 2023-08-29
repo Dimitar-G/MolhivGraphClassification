@@ -574,3 +574,74 @@ class GINEModel5(torch.nn.Module):
         x = x.sigmoid()
 
         return x
+
+
+class GINEModel5Pooled(torch.nn.Module):
+    def __init__(self, node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, dropout=0.5, pooling_type='topk'):
+        super(GINEModel5Pooled, self).__init__()
+        self.node_embedding_size = node_embedding_size
+        self.edge_embedding_size = edge_embedding_size
+        self.hidden_channels = hidden_channels
+        self.dropout = dropout
+
+        if pooling_type == 'topk':
+            self.pooling1 = TopKPooling(self.hidden_channels)
+            self.pooling2 = TopKPooling(self.hidden_channels)
+            self.pooling3 = TopKPooling(self.hidden_channels)
+            self.pooling4 = TopKPooling(self.hidden_channels)
+        elif pooling_type == 'sag':
+            self.pooling1 = SAGPooling(self.hidden_channels)
+            self.pooling2 = SAGPooling(self.hidden_channels)
+            self.pooling3 = SAGPooling(self.hidden_channels)
+            self.pooling4 = SAGPooling(self.hidden_channels)
+        else:
+            print('Pooling type not supported.')
+
+        self.bn1 = BatchNorm1d(self.hidden_channels)
+        self.bn2 = BatchNorm1d(self.hidden_channels)
+        self.bn3 = BatchNorm1d(self.hidden_channels)
+        self.bn4 = BatchNorm1d(self.hidden_channels)
+        self.bn5 = BatchNorm1d(self.hidden_channels)
+
+        self.conv1 = GINEConv(nn=Linear(self.node_embedding_size, self.hidden_channels), edge_dim=self.edge_embedding_size)
+        self.conv2 = GINEConv(nn=Linear(self.hidden_channels, self.hidden_channels), edge_dim=self.edge_embedding_size)
+        self.conv3 = GINEConv(nn=Linear(self.hidden_channels, self.hidden_channels), edge_dim=self.edge_embedding_size)
+        self.conv4 = GINEConv(nn=Linear(self.hidden_channels, self.hidden_channels), edge_dim=self.edge_embedding_size)
+        self.conv5 = GINEConv(nn=Linear(self.hidden_channels, self.hidden_channels), edge_dim=self.edge_embedding_size)
+        self.linear1 = Linear(self.hidden_channels, int(self.hidden_channels / 2))
+        self.linear2 = Linear(int(self.hidden_channels / 2), 1)
+
+    def forward(self, x, edge_index, edge_attr, batch):
+        x = self.conv1(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        x = self.bn1(x)
+        x = x.relu()
+        x, edge_index1, edge_attr1, batch_pool1, _, _, = self.pooling1(x, edge_index=edge_index, edge_attr=edge_attr, batch=batch)
+
+        x = self.conv2(x=x, edge_index=edge_index1, edge_attr=edge_attr1)
+        x = self.bn2(x)
+        x = x.relu()
+        x, edge_index2, edge_attr2, batch_pool2, _, _, = self.pooling2(x, edge_index=edge_index1, edge_attr=edge_attr1, batch=batch_pool1)
+
+        x = self.conv3(x=x, edge_index=edge_index2, edge_attr=edge_attr2)
+        x = self.bn3(x)
+        x = x.relu()
+        x, edge_index3, edge_attr3, batch_pool3, _, _, = self.pooling3(x, edge_index=edge_index2, edge_attr=edge_attr2, batch=batch_pool2)
+
+        x = self.conv4(x=x, edge_index=edge_index3, edge_attr=edge_attr3)
+        x = self.bn4(x)
+        x = x.relu()
+        x, edge_index4, edge_attr4, batch_pool4, _, _, = self.pooling4(x, edge_index=edge_index3, edge_attr=edge_attr3, batch=batch_pool3)
+
+        x = self.conv5(x=x, edge_index=edge_index4, edge_attr=edge_attr4)
+        x = self.bn5(x)
+        x = x.relu()
+
+        x = global_mean_pool(x, batch_pool4)
+
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.linear1(x)
+        x = x.relu()
+        x = self.linear2(x)
+        x = x.sigmoid()
+
+        return x
