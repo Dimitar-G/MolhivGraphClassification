@@ -1,0 +1,12 @@
+    print('Training FusionModel:')
+    model = FusionModel3(input_dim=3239)
+    training_folder = './experiments_fusion/GATModel3PooledSAG/experiment2'
+    embeddings_folder = './dataset/embeddings_fusion/GATModel3Pooled/experiment0SAG'
+    train(model=model, num_epochs=6, results_folder_path=training_folder, embeddings_folder=embeddings_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
+    generate_plots(training_folder)
+    test_models(model, training_folder, embeddings_folder=embeddings_folder)
+
+
+TRAINING: Max AUC ROC = 0.9786202445655438
+VALIDATION: Max AUC ROC = 0.8008922447579855
+TESTING: Best model = model_1.pt, AUC ROC = 0.7614592788582244

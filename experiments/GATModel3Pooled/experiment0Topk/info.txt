@@ -2,4 +2,4 @@ GATModel3Pooled(node_embedding_size=64, edge_embedding_size=32, hidden_channels=
 
 TRAINING: Max AUC ROC = 0.897470264152785
 VALIDATION: Max AUC ROC = 0.7469840045071526
-TESTING: Best model = model_160.pt, AUC ROC = 0.6124654782827015
+TESTING: Best model = model_20.pt, AUC ROC = 0.6463344212904845

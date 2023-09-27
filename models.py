@@ -189,6 +189,24 @@ class GATModel3Pooled(torch.nn.Module):
 
         return x
 
+    def calculate_embedding(self, x, edge_index, edge_attr, batch):
+        x = self.conv1(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        x = self.bn1(x)
+        x = x.relu()
+        x, edge_index1, edge_attr1, batch_pool1, _, _, = self.pooling1(x, edge_index=edge_index, edge_attr=edge_attr, batch=batch)
+        x = self.conv2(x=x, edge_index=edge_index1, edge_attr=edge_attr1)
+        x = self.bn2(x)
+        x = x.relu()
+        x, edge_index2, edge_attr2, batch_pool2, _, _, = self.pooling2(x, edge_index=edge_index1, edge_attr=edge_attr1, batch=batch_pool1)
+        x = self.conv3(x=x, edge_index=edge_index2, edge_attr=edge_attr2)
+        x = self.bn3(x)
+        x = x.relu()
+        x, _, _, batch_pool3, _, _, = self.pooling3(x, edge_index=edge_index2, edge_attr=edge_attr2, batch=batch_pool2)
+
+        x = global_mean_pool(x, batch_pool3)
+
+        return x
+
 
 class GATModel5(torch.nn.Module):
     def __init__(self, node_embedding_size=64, edge_embedding_size=32, hidden_channels=256, num_heads=8, dropout=0.6):
@@ -336,6 +354,16 @@ class NNModel2SAG(torch.nn.Module):
         x = x.relu()
         x = self.linear2(x)
         x = x.sigmoid()
+
+        return x
+
+    def calculate_embedding(self, x, edge_index, edge_attr, batch):
+        x = self.conv1(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        x = x.relu()
+        x = self.conv2(x=x, edge_index=edge_index, edge_attr=edge_attr)
+
+        x, _, _, batch_pool, _, _, = self.pooling(x, edge_index=edge_index, edge_attr=edge_attr, batch=batch)
+        x = global_mean_pool(x, batch_pool)
 
         return x
 
@@ -642,6 +670,119 @@ class GINEModel5Pooled(torch.nn.Module):
         x = self.linear1(x)
         x = x.relu()
         x = self.linear2(x)
+        x = x.sigmoid()
+
+        return x
+
+    def calculate_embedding(self, x, edge_index, edge_attr, batch):
+        x = self.conv1(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        x = self.bn1(x)
+        x = x.relu()
+        x, edge_index1, edge_attr1, batch_pool1, _, _, = self.pooling1(x, edge_index=edge_index, edge_attr=edge_attr, batch=batch)
+
+        x = self.conv2(x=x, edge_index=edge_index1, edge_attr=edge_attr1)
+        x = self.bn2(x)
+        x = x.relu()
+        x, edge_index2, edge_attr2, batch_pool2, _, _, = self.pooling2(x, edge_index=edge_index1, edge_attr=edge_attr1, batch=batch_pool1)
+
+        x = self.conv3(x=x, edge_index=edge_index2, edge_attr=edge_attr2)
+        x = self.bn3(x)
+        x = x.relu()
+        x, edge_index3, edge_attr3, batch_pool3, _, _, = self.pooling3(x, edge_index=edge_index2, edge_attr=edge_attr2, batch=batch_pool2)
+
+        x = self.conv4(x=x, edge_index=edge_index3, edge_attr=edge_attr3)
+        x = self.bn4(x)
+        x = x.relu()
+        x, edge_index4, edge_attr4, batch_pool4, _, _, = self.pooling4(x, edge_index=edge_index3, edge_attr=edge_attr3, batch=batch_pool3)
+
+        x = self.conv5(x=x, edge_index=edge_index4, edge_attr=edge_attr4)
+        x = self.bn5(x)
+        x = x.relu()
+
+        x = global_mean_pool(x, batch_pool4)
+
+        return x
+
+
+class FusionModel1(torch.nn.Module):
+    def __init__(self, input_dim=3239):
+        super(FusionModel1, self).__init__()
+        self.fc1 = Linear(in_features=input_dim, out_features=1024)
+        self.fc2 = Linear(in_features=1024, out_features=1024)
+        self.fc3 = Linear(in_features=1024, out_features=1024)
+        self.fc4 = Linear(in_features=1024, out_features=512)
+        self.fc5 = Linear(in_features=512, out_features=256)
+        self.fc6 = Linear(in_features=256, out_features=1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = x.relu()
+        x = self.fc2(x)
+        x = x.relu()
+        x = self.fc3(x)
+        x = x.relu()
+        x = self.fc4(x)
+        x = x.relu()
+        x = self.fc5(x)
+        x = x.relu()
+        x = self.fc6(x)
+        x = x.sigmoid()
+
+        return x
+
+
+class FusionModel2(torch.nn.Module):
+    def __init__(self, input_dim=3239):
+        super(FusionModel2, self).__init__()
+        self.fc1 = Linear(in_features=input_dim, out_features=2048)
+        self.fc2 = Linear(in_features=2048, out_features=1024)
+        self.fc3 = Linear(in_features=1024, out_features=512)
+        self.fc4 = Linear(in_features=512, out_features=256)
+        self.fc5 = Linear(in_features=256, out_features=1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = x.relu()
+        x = self.fc2(x)
+        x = x.relu()
+        x = self.fc3(x)
+        x = x.relu()
+        x = self.fc4(x)
+        x = x.relu()
+        x = self.fc5(x)
+        x = x.sigmoid()
+
+        return x
+
+
+class FusionModel3(torch.nn.Module):
+    def __init__(self, input_dim=3239):
+        super(FusionModel3, self).__init__()
+        self.fc1 = Linear(in_features=input_dim, out_features=2048)
+        self.fc2 = Linear(in_features=2048, out_features=1024)
+        self.fc3 = Linear(in_features=1024, out_features=1024)
+        self.fc4 = Linear(in_features=1024, out_features=1024)
+        self.fc5 = Linear(in_features=1024, out_features=512)
+        self.fc6 = Linear(in_features=512, out_features=512)
+        self.fc7 = Linear(in_features=512, out_features=256)
+        self.fc8 = Linear(in_features=256, out_features=1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = x.relu()
+        x = self.fc2(x)
+        x = x.relu()
+        x = self.fc3(x)
+        x = x.relu()
+        x = self.fc4(x)
+        x = x.relu()
+        x = self.fc5(x)
+        x = x.relu()
+        x = self.fc6(x)
+        x = x.relu()
+        x = self.fc7(x)
+        x = x.relu()
+        x = self.fc8(x)
         x = x.sigmoid()
 
         return x

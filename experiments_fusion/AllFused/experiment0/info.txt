@@ -1,0 +1,12 @@
+    # print('Training FusionModel3:')
+    # model = FusionModel1(input_dim=8181)
+    # training_folder = './experiments_fusion/AllFused/experiment0'
+    # embeddings_folder = './dataset/embeddings_fusion/AllFused'
+    # train(model=model, num_epochs=6, results_folder_path=training_folder, embeddings_folder=embeddings_folder, learning_rate=0.0001, batch_size=128, weighted_sampling=True)
+    # generate_plots(training_folder)
+    # test_models(model, training_folder, embeddings_folder=embeddings_folder)
+
+
+TRAINING: Max AUC ROC = 0.9876746102850965
+VALIDATION: Max AUC ROC = 0.8222216098373506
+TESTING: Best model = model_0.pt, AUC ROC = 0.76211205314896

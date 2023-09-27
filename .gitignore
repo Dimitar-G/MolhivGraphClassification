@@ -1,4 +1,5 @@
 /experiments/*/*/models/*
 /experiments/*/*/tests/*
+/experiments_fusion/*/*/models/*
 /dataset
 /dataset/*
